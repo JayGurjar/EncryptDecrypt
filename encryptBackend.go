@@ -12,6 +12,7 @@ import (
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/term"
+    "path/filepath"
 )
 
 
@@ -43,6 +44,10 @@ func main() {
     deci := dec.String("i", "", "Provide an input file to decrypt.")
     deco := dec.String("o", "", "Provide an output filename.")
 
+    encDir := flag.NewFlagSet("encDir",flag.ExitOnError)
+    encIDir := encDir.String("i","","Please provide input directory")
+    encODir := encDir.String("o","","Please enter output directory")
+
     pw := flag.NewFlagSet("pw", flag.ExitOnError)
     pwsize := pw.Int("s", 15, "Generate password of given length.")
 
@@ -61,10 +66,11 @@ func main() {
                 fmt.Println("Provide an input file to encrypt.")
                 os.Exit(1)
             }
+            bytepw := getPasswordFromUser()
             if *enco != "" {
-                encryption(*enci, *enco)
+                encryption(*enci, *enco,bytepw)
             } else {
-                encryption(*enci, *enci+".enc")
+                encryption(*enci, *enci+".enc",bytepw)
             }
 
         case "dec" :
@@ -93,6 +99,21 @@ func main() {
                 panic(err)
             }
             fmt.Println("Password :", getPassword(*pwsize))
+        
+        case "encDir":
+            if err := encDir.Parse(os.Args[2:]); err != nil {
+                log.Println("Error opening the directory")
+                panic(err);
+            }
+            if *encIDir == "" {
+                fmt.Println("Provide an input file to encrypt.")
+                os.Exit(1)
+            }
+            if *encODir != "" {
+                encryptionDirectory(*encIDir, *encODir)
+            } else {
+                encryptionDirectory(*encIDir,*encIDir+"Encrypted")
+            }
 
         default :
             showHelp()
@@ -134,8 +155,7 @@ func getRandNum(max int64) int64 {
     }
 }
 
-
-func encryption(plaintext_filename string, ciphertext_filename string) {
+func getPasswordFromUser() []byte {
     fmt.Println("Encrypting.\nEnter a long and random password : ")
     bytepw, err := term.ReadPassword(int(os.Stdin.Fd()))
     if err != nil {
@@ -154,6 +174,11 @@ func encryption(plaintext_filename string, ciphertext_filename string) {
         log.Println("Passwords don't match! Exiting.")
         os.Exit(1)
     }
+    return bytepw
+}
+
+
+func encryption(plaintext_filename string, ciphertext_filename string, bytepw []byte) {
 
     salt := make([]byte, SaltSize)
     if n, err := cryptorand.Read(salt); err != nil || n != SaltSize {
@@ -218,6 +243,27 @@ func encryption(plaintext_filename string, ciphertext_filename string) {
     }
 }
 
+func encryptionDirectory(inputDirectoryName string, outputDirectoryName string) {
+    if err := os.Mkdir(outputDirectoryName, os.ModePerm); err != nil {
+        log.Fatal(err)
+    }
+    
+    files,err := os.ReadDir(inputDirectoryName)
+    if err != nil {
+        log.Println("Error opening the input Directory")
+        panic(err)
+    }
+
+    bytepw := getPasswordFromUser()
+
+    for _,file := range files {
+        inputFilePath := filepath.Join(inputDirectoryName,file.Name())
+        outputFilePath := ""
+        outputFilePath = filepath.Join(outputDirectoryName,file.Name()+".enc")
+        encryption(inputFilePath,outputFilePath,bytepw)
+    }
+}
+
 
 func decryption(ciphertext_filename string, decryptedplaintext string) {
     fmt.Println("Decrypting.\nEnter the password : ")
@@ -238,7 +284,7 @@ func decryption(ciphertext_filename string, decryptedplaintext string) {
     n, err := infile.Read(salt)
     if n != SaltSize {
         log.Printf("Error. Salt should be %d bytes long. salt n : %d", SaltSize, n)
-        log.Printf("Another Error :", err)
+        log.Printf("Another Error :%s", err)
         panic("Generated salt is not of required length")
     }
     if err == io.EOF {
