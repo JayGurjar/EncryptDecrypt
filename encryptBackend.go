@@ -160,7 +160,7 @@ func encryption(plaintext_filename string, ciphertext_filename string) {
         log.Println("Error when generating radom salt.")
         panic(err)
     }
-
+    
     outfile, err := os.OpenFile(ciphertext_filename, os.O_RDWR|os.O_CREATE, 0666)
     if err != nil {
         log.Println("Error when opening/creating output file.")
