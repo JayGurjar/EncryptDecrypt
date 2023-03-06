@@ -1,17 +1,17 @@
 package main
 
 import (
-    "fmt"
-    "io"
-    "log"
-    "os"
-    "bytes"
-    "flag"
-    "math/big"
-    cryptorand "crypto/rand"
-    "golang.org/x/crypto/argon2"
-    "golang.org/x/crypto/chacha20poly1305"
-    "golang.org/x/term"
+	"bytes"
+	cryptorand "crypto/rand"
+	"flag"
+	"fmt"
+	"io"
+	"log"
+	"math/big"
+	"os"
+	"golang.org/x/crypto/argon2"
+	"golang.org/x/crypto/chacha20poly1305"
+	"golang.org/x/term"
 )
 
 
@@ -21,9 +21,10 @@ const (
     KeySize = uint32(32) // KeySize is 32 bytes (256 bits).
     KeyTime = uint32(5)
     KeyMemory = uint32(1024*64) // KeyMemory in KiB. here, 64 MiB.
-    KeyThreads = uint8(4)
     chunkSize = 1024*32 // chunkSize in bytes. here, 32 KiB.
 )
+
+var KeyThreads uint8 = 0
 
 
 func main() {
@@ -44,6 +45,11 @@ func main() {
 
     pw := flag.NewFlagSet("pw", flag.ExitOnError)
     pwsize := pw.Int("s", 15, "Generate password of given length.")
+
+    // flag.Uint8Var(&KeyThreads,"threads",4,"Enter the number threads to be used for this operation")
+    fmt.Println("Please enter the number of threads you would want to use for this operation")
+    fmt.Scan(&KeyThreads)
+    fmt.Println("The number of threads to be used are ",KeyThreads)
 
     switch os.Args[1] {
         case "enc" :
@@ -144,7 +150,7 @@ func encryption(plaintext_filename string, ciphertext_filename string) {
         panic(err)
     }
 
-    if bytes.Compare(bytepw, bytepw2) != 0 {
+    if !bytes.Equal(bytepw, bytepw2) {
         log.Println("Passwords don't match! Exiting.")
         os.Exit(1)
     }
@@ -246,6 +252,10 @@ func decryption(ciphertext_filename string, decryptedplaintext string) {
 
     key := argon2.IDKey(bytepw, salt, KeyTime, KeyMemory, KeyThreads, KeySize)
     aead, err := chacha20poly1305.NewX(key)
+    if err != nil {
+        log.Println("Error getting the key from argon2 library");
+        panic(err);
+    }
     decbufsize := aead.NonceSize() + chunkSize + aead.Overhead()
 
     outfile, err := os.OpenFile(decryptedplaintext, os.O_RDWR|os.O_CREATE, 0666)
@@ -288,4 +298,8 @@ func decryption(ciphertext_filename string, decryptedplaintext string) {
 
         ad_counter += 1
     }
+}
+
+func zeroAllBits(file_name string) {
+    
 }
