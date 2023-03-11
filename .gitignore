@@ -1,7 +1,13 @@
-go.mod
+encrypt-backend/go.mod
 
-go.sum
+encrypt-backend/go.sum
 
-encryptBackend.exe
+encrypt-backend/encryptBackend.exe
 
-sampleFiles/
+encrypt-backend/sampleFiles/
+
+encrypt-backend/Trial
+
+encrypt-ui/node_modules/
+
+encrypt-ui/package-lock.json

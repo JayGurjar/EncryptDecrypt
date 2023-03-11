@@ -1,0 +1,14 @@
+{
+  "name": "encrypt-ui",
+  "version": "1.0.0",
+  "description": "A UI for encrypt app",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jay",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^23.1.3"
+  }
+}
